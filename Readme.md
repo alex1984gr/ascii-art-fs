@@ -1,14 +1,15 @@
 # ASCII-Art-FS
 
-ASCII-Art-FS is a Go CLI application that renders text as ASCII art using banner templates.
-It supports the three standard templates:
+ASCII-Art-FS is a Go CLI application that renders text into ASCII art using banner templates.
+
+Supported banners:
 - `standard`
 - `shadow`
 - `thinkertoy`
 
 ## Usage
 
-Required format for the FS subject:
+FS required format:
 
 ```bash
 go run . [STRING] [BANNER]
@@ -20,19 +21,27 @@ Example:
 go run . "something" standard
 ```
 
-The program also supports a single argument (default banner: `standard`):
+Single argument is also supported (defaults to `standard`):
 
 ```bash
 go run . "something"
 ```
 
-If the argument format is invalid, it prints:
+Invalid formats print:
 
 ```text
 Usage: go run . [STRING] [BANNER]
 
 EX: go run . something standard
 ```
+
+## Optional Compatibility
+
+Because this repo includes optional features too, it also accepts correctly formatted options:
+- `--color=<color>`
+- `--out=<file.txt>`
+- `--output=<file.txt>`
+- `--font=<banner>`
 
 ## Examples
 
@@ -42,24 +51,19 @@ go run . "Hello There!" shadow
 go run . "Hello There!" thinkertoy
 ```
 
-## Optional Compatibility
-
-This codebase keeps compatibility with already-implemented optional flags when correctly formatted:
-- `--color=<color>`
-- `--out=<file.txt>`
-- `--output=<file.txt>`
-- `--font=<banner>`
-
 ## Project Structure
 
-- `main.go`: entry point
-- `pipeline/validateInput.go`: input checks
-- `pipeline/tokenize.go`: token splitting
-- `pipeline/loadBanner.go`: banner file loading
-- `pipeline/renderLines.go`: ASCII art rendering
-- `pipeline/colorFormating.go`: optional coloring
-- `pipeline/writeOutput.go`: output writer
-- `pipeline/pipeline.go`: full flow orchestration and argument parsing
+- `main.go`: application entry point
+- `pipeline/pipeline.go`: pipeline orchestration only (run flow)
+- `pipeline/args.go`: argument parsing and FS usage validation
+- `pipeline/loadBanner.go`: reads banner files from `banners/`
+- `pipeline/tokenize.go`: splits input into tokens
+- `pipeline/renderLines.go`: builds ASCII art lines
+- `pipeline/colorFormating.go`: optional ANSI color formatting
+- `pipeline/validateInput.go`: input validation
+- `pipeline/writeOutput.go`: writes output to stdout/file
+- `tests/args_test.go`: parsing-focused tests
+- `tests/`: unit tests for pipeline stages
 
 ## Testing
 
@@ -69,7 +73,12 @@ Run all tests:
 go test ./...
 ```
 
-Tests cover parsing behavior, banner loading, rendering, output writing, and validation.
+Current tests cover:
+- FS argument contract
+- optional flags behavior
+- banner loading/rendering
+- output writing
+- input validation
 
 ## Allowed Packages
 
