@@ -37,11 +37,23 @@ EX: go run . something standard
 
 ## Optional Compatibility
 
-Because this repo includes optional features too, it also accepts correctly formatted options:
-- `--color=<color>`
-- `--out=<file.txt>`
-- `--output=<file.txt>`
-- `--font=<banner>`
+Because this repo includes optional features too, it also accepts correctly formatted options.
+
+Flags can be used with either single dash (`-`) or double dash (`--`), and with either `=` or space separator:
+
+- `-color=<color>` or `--color=<color>` or `-color <color>` or `--color <color>`
+- `-out=<file.txt>` or `--out=<file.txt>` or `-out <file.txt>` or `--out <file.txt>`
+- `-output=<file.txt>` or `--output=<file.txt>` (alias for `-out`)
+- `-font=<banner>` or `--font=<banner>` or `-font <banner>` or `--font <banner>`
+
+**Examples:**
+```bash
+go run . --color=red "hello"
+go run . -color red "hello"
+go run . --font=shadow "hello"
+go run . -out=output.txt "hello"
+go run . --color=blue "ll" "hello" shadow
+```
 
 ## Examples
 
@@ -82,4 +94,13 @@ Current tests cover:
 
 ## Allowed Packages
 
-Only Go standard library packages are used.
+Only Go standard library packages are used:
+- `flag` - Command-line flag parsing
+- `fmt` - Formatted I/O
+- `io` - Basic I/O interfaces
+- `os` - Operating system functionality
+- `strings` - String manipulation
+- `bufio` - Buffered I/O
+- `path/filepath` - File path manipulation
+- `unicode/utf8` - UTF-8 encoding/decoding
+- `errors` - Error handling
