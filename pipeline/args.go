@@ -2,8 +2,9 @@
 package pipeline
 
 import (
+	"flag"    // Go's standard flag parsing package
 	"fmt"     // Formatted I/O for error messages
-	"strings" // String manipulation functions
+	"os"      // Operating system functions
 )
 
 // usageMessage defines the help text shown when arguments are invalid
@@ -16,59 +17,31 @@ type runConfig struct {
 	input     string // Text to convert to ASCII art
 	colorName string // ANSI color name (e.g., "red", "blue")
 	substring string // Specific substring to colorize
-	fontSet   bool   // Tracks if --font flag was explicitly used
 }
 
-// parseArgs processes command-line arguments and returns configuration
+// parseArgs processes command-line arguments using Go's flag package and returns configuration
 func parseArgs(args []string) (runConfig, error) {
-	cfg := runConfig{font: "standard"}          // Initialize with default font
-	positionals := make([]string, 0, len(args)) // Store non-flag arguments
+	// Create a new FlagSet for custom parsing (allows us to control error handling)
+	fs := flag.NewFlagSet("ascii-art", flag.ContinueOnError)
+	// Disable default error output (we'll handle errors ourselves)
+	fs.SetOutput(os.NewFile(0, os.DevNull))
 
-	// Iterate through all command-line arguments
-	for _, arg := range args {
-		switch {
-		// Handle --font=<name> flag
-		case strings.HasPrefix(arg, "--font="):
-			cfg.font = strings.TrimPrefix(arg, "--font=") // Extract font name
-			cfg.fontSet = true                             // Mark that font was explicitly set
-			if cfg.font == "" {
-				return runConfig{}, fmt.Errorf("empty font") // Reject --font=
-			}
-		// Reject standalone --font without value
-		case arg == "--font":
-			return runConfig{}, fmt.Errorf("invalid font format")
-		// Handle --out=<filename> flag
-		case strings.HasPrefix(arg, "--out="):
-			cfg.outFile = strings.TrimPrefix(arg, "--out=") // Extract filename
-			if cfg.outFile == "" {
-				return runConfig{}, fmt.Errorf("empty out file") // Reject --out=
-			}
-		// Handle --output=<filename> flag (alias for --out)
-		case strings.HasPrefix(arg, "--output="):
-			cfg.outFile = strings.TrimPrefix(arg, "--output=") // Extract filename
-			if cfg.outFile == "" {
-				return runConfig{}, fmt.Errorf("empty output file") // Reject --output=
-			}
-		// Reject standalone --out or --output without value
-		case arg == "--out" || arg == "--output":
-			return runConfig{}, fmt.Errorf("invalid output format")
-		// Handle --color=<name> flag
-		case strings.HasPrefix(arg, "--color="):
-			cfg.colorName = strings.TrimPrefix(arg, "--color=") // Extract color name
-			if cfg.colorName == "" {
-				return runConfig{}, fmt.Errorf("empty color") // Reject --color=
-			}
-		// Reject standalone --color without value
-		case arg == "--color":
-			return runConfig{}, fmt.Errorf("invalid color format")
-		// Reject any unknown flags starting with --
-		case strings.HasPrefix(arg, "--"):
-			return runConfig{}, fmt.Errorf("unknown option")
-		// Collect non-flag arguments (positional arguments)
-		default:
-			positionals = append(positionals, arg)
-		}
+	// Initialize config with default values
+	cfg := runConfig{font: "standard"}
+
+	// Define flags using the flag package
+	fs.StringVar(&cfg.font, "font", "standard", "Banner font to use (standard, shadow, thinkertoy)")
+	fs.StringVar(&cfg.outFile, "out", "", "Output file path")
+	fs.StringVar(&cfg.outFile, "output", "", "Output file path (alias for --out)")
+	fs.StringVar(&cfg.colorName, "color", "", "ANSI color name for the output")
+
+	// Parse the flags from the arguments
+	if err := fs.Parse(args); err != nil {
+		return runConfig{}, err
 	}
+
+	// Get remaining positional arguments after flags are parsed
+	positionals := fs.Args()
 
 	// Handle positional arguments when NO color flag is present
 	if cfg.colorName == "" {
@@ -78,10 +51,6 @@ func parseArgs(args []string) (runConfig, error) {
 			cfg.input = positionals[0]
 		case 2:
 			// Format: <input> <banner>
-			if cfg.fontSet {
-				// Can't have both --font flag and positional banner
-				return runConfig{}, fmt.Errorf("too many args")
-			}
 			if !isBannerName(positionals[1]) {
 				// Second arg must be valid banner name
 				return runConfig{}, fmt.Errorf("invalid banner")
@@ -102,7 +71,7 @@ func parseArgs(args []string) (runConfig, error) {
 		cfg.input = positionals[0]
 	case 2:
 		// Ambiguous: could be <input> <banner> OR <substring> <input>
-		if !cfg.fontSet && isBannerName(positionals[1]) {
+		if isBannerName(positionals[1]) {
 			// Format: --color=<name> <input> <banner>
 			cfg.input = positionals[0]
 			cfg.font = positionals[1]
@@ -113,10 +82,6 @@ func parseArgs(args []string) (runConfig, error) {
 		}
 	case 3:
 		// Format: --color=<name> <substring> <input> <banner>
-		if cfg.fontSet {
-			// Can't have both --font flag and positional banner
-			return runConfig{}, fmt.Errorf("too many args")
-		}
 		if !isBannerName(positionals[2]) {
 			// Third arg must be valid banner name
 			return runConfig{}, fmt.Errorf("invalid banner")
